@@ -21,12 +21,15 @@
 
 ## 구성품: 에디터 + 런타임
 
-Senbrix 는 두 부분으로 이루어지며 **따로 설치**합니다. 이 릴리스는 에디터만 담고 있습니다.
+Senbrix 는 두 부분으로 이루어지며 **따로 설치·따로 릴리스**합니다. 이 저장소의 릴리스 페이지에는 두 종류가 번갈아 올라옵니다:
+
+- **`vX.Y.Z` — 에디터** (Windows Setup·자동 업데이트 자산). "최신 릴리스"(latest)는 항상 에디터입니다.
+- **`runtime-vX.Y.Z` — 라즈베리파이 런타임** (`Senbrix-runtime-X.Y.Z-linux.tar.gz`). 설치 스크립트 `install-runtime.sh` 는 저장소 루트 파일이라 원라이너 URL 이 고정입니다.
 
 | 구성 | 실행 위치 | 역할 |
 |---|---|---|
-| **Senbrix 에디터** (이 릴리스) | Windows PC | 래더·심볼·C# 편집, 린트, 빌드(`dotnet build`), 런타임 발견·배포, 실시간 모니터링·진단, MCP 서버 |
-| **Senbrix 런타임** | Raspberry Pi | 배포된 앱을 10ms 스캔 사이클로 실행. HTTP(5557)·TextComm(5555)·mDNS 로 에디터와 통신. systemd 서비스로 상주하며 유지(keep) 메모리 저장·복원, IO 확장 보드(CAN)·메인 보드 GPIO·Modbus 통신을 구동 |
+| **Senbrix 에디터** (`vX.Y.Z` 릴리스) | Windows PC | 래더·심볼·C# 편집, 린트, 빌드(`dotnet build`), 런타임 발견·배포, 실시간 모니터링·진단, MCP 서버 |
+| **Senbrix 런타임** (`runtime-vX.Y.Z` 릴리스) | Raspberry Pi | 배포된 앱을 10ms 스캔 사이클로 실행. HTTP(5557)·TextComm(5555)·mDNS 로 에디터와 통신. systemd 서비스로 상주하며 유지(keep) 메모리 저장·복원, IO 확장 보드(CAN)·메인 보드 GPIO·Modbus 통신을 구동 |
 
 런타임 설치는 아래 [런타임 설치 (Raspberry Pi)](#런타임-설치-raspberry-pi) 절을 따릅니다. 에디터의 **배포**는 런타임에 *앱(빌드 결과)* 을 밀어넣는 것이지 런타임 자체를 설치하는 것이 아닙니다.
 
@@ -88,12 +91,12 @@ Senbrix 는 **MCP 서버**를 내장해 Claude Code · Codex 같은 AI 코딩 �
 에디터가 배포할 대상인 **Senbrix 런타임**을 라즈베리파이에 한 번 설치합니다. Raspberry Pi OS(64bit 권장, 32bit 가능) 셸에서 한 줄:
 
 ```bash
-curl -sSL https://github.com/going-kr/Release.Senbrix/releases/latest/download/install-runtime.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/going-kr/Release.Senbrix/master/install-runtime.sh | sudo bash
 ```
 
 스크립트가 하는 일:
 1. **.NET 9 ASP.NET Core 런타임**을 `/opt/dotnet` 에 설치(공식 `dotnet-install.sh`, arm64/arm32 자동, 이미 있으면 건너뜀)
-2. 릴리스의 **`Senbrix-runtime-x.y.z-linux.tar.gz`** 를 받아 `/opt/senbrix` 에 설치 (재설치·업데이트 시 `Apps/`·`Logs/`·`appsettings.json` 보존)
+2. **런타임 릴리스**(태그 `runtime-vX.Y.Z`, 에디터 릴리스 `vX.Y.Z` 와 별개)의 **`Senbrix-runtime-x.y.z-linux.tar.gz`** 를 받아 `/opt/senbrix` 에 설치 (재설치·업데이트 시 `Apps/`·`Logs/`·`appsettings.json` 보존)
 3. 전용 사용자 `senbrix`(gpio·dialout 그룹) 생성, **systemd 서비스 `senbrix-runtime`** 등록·기동, 상태와 IP 출력
 
 옵션: `sudo bash -s -- --version 0.9.0`(버전 고정, 에디터와 같은 버전 권장) · `--tarball ./파일.tar.gz`(오프라인, 미리 받은 파일) · `--no-dotnet`(.NET 설치 생략).
@@ -149,12 +152,12 @@ sudo systemctl daemon-reload && sudo systemctl enable --now senbrix-runtime
 
 ## 릴리스 파일 안내
 
-| 파일 | 용도 |
-|---|---|
-| `Senbrix-win-Setup.exe` | **에디터 처음 설치 시 받는 파일** |
-| `Senbrix-runtime-x.y.z-linux.tar.gz`, `install-runtime.sh` | **라즈베리파이 런타임**과 설치 스크립트 ([런타임 설치](#런타임-설치-raspberry-pi)). 스크립트가 tar.gz 를 직접 받으므로 보통 따로 받지 않음 |
-| `Senbrix-x.y.z-full.nupkg`, `*-delta.nupkg` | 자동 업데이트 패키지. 직접 받지 않음 |
-| `RELEASES`, `releases.win.json`, `assets.win.json` | 자동 업데이트 메타데이터 |
+| 릴리스 | 파일 | 용도 |
+|---|---|---|
+| `vX.Y.Z` (에디터) | `Senbrix-win-Setup.exe` | **에디터 처음 설치 시 받는 파일** |
+| `vX.Y.Z` (에디터) | `Senbrix-x.y.z-full.nupkg`, `*-delta.nupkg`, `RELEASES`, `releases.win.json`, `assets.win.json` | 자동 업데이트 패키지·메타데이터. 직접 받지 않음 |
+| `runtime-vX.Y.Z` (런타임) | `Senbrix-runtime-x.y.z-linux.tar.gz` | **라즈베리파이 런타임**. `install-runtime.sh` 가 직접 받으므로 보통 따로 받지 않음(오프라인 설치 시 `--tarball`) |
+| 저장소 루트 | `install-runtime.sh` | 런타임 설치 스크립트 ([런타임 설치](#런타임-설치-raspberry-pi)) |
 
 ## 문의
 

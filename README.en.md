@@ -21,12 +21,15 @@ This repository distributes **installers and auto-update artifacts only**. The s
 
 ## Components: editor + runtime
 
-Senbrix has two parts that are **installed separately**. This release contains the editor only.
+Senbrix has two parts that are **installed and released separately**. Two kinds of releases appear on this repository's release page:
+
+- **`vX.Y.Z` — Editor** (Windows setup and auto-update assets). The "latest release" is always the editor.
+- **`runtime-vX.Y.Z` — Raspberry Pi runtime** (`Senbrix-runtime-X.Y.Z-linux.tar.gz`). The install script `install-runtime.sh` lives at the repository root, so the one-liner URL never changes.
 
 | Component | Runs on | Role |
 |---|---|---|
-| **Senbrix Editor** (this release) | Windows PC | Ladder/symbol/C# editing, lint, build (`dotnet build`), runtime discovery and deploy, live monitoring and diagnostics, MCP server |
-| **Senbrix Runtime** | Raspberry Pi | Executes the deployed app on a 10 ms scan cycle. Talks to the editor over HTTP (5557), TextComm (5555) and mDNS. Runs as a systemd service; persists/restores keep memory and drives CAN IO expansion boards, main-board GPIO and Modbus communication |
+| **Senbrix Editor** (`vX.Y.Z` releases) | Windows PC | Ladder/symbol/C# editing, lint, build (`dotnet build`), runtime discovery and deploy, live monitoring and diagnostics, MCP server |
+| **Senbrix Runtime** (`runtime-vX.Y.Z` releases) | Raspberry Pi | Executes the deployed app on a 10 ms scan cycle. Talks to the editor over HTTP (5557), TextComm (5555) and mDNS. Runs as a systemd service; persists/restores keep memory and drives CAN IO expansion boards, main-board GPIO and Modbus communication |
 
 See [Runtime install (Raspberry Pi)](#runtime-install-raspberry-pi) below. The editor's **Deploy** pushes the *app (build output)* to the runtime; it does not install the runtime itself.
 
@@ -88,12 +91,12 @@ Senbrix embeds an **MCP server**, so AI coding tools such as Claude Code and Cod
 Install the **Senbrix Runtime**, the target the editor deploys to, once on the Raspberry Pi. One line in the Pi's shell (Raspberry Pi OS, 64-bit recommended, 32-bit works):
 
 ```bash
-curl -sSL https://github.com/going-kr/Release.Senbrix/releases/latest/download/install-runtime.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/going-kr/Release.Senbrix/master/install-runtime.sh | sudo bash
 ```
 
 What the script does:
 1. Installs the **.NET 9 ASP.NET Core runtime** to `/opt/dotnet` (official `dotnet-install.sh`, arm64/arm32 detected, skipped if present)
-2. Downloads **`Senbrix-runtime-x.y.z-linux.tar.gz`** from the release and installs it to `/opt/senbrix` (`Apps/`, `Logs/` and `appsettings.json` are preserved on reinstall/update)
+2. Downloads **`Senbrix-runtime-x.y.z-linux.tar.gz`** from the **runtime release** (tag `runtime-vX.Y.Z`, separate from the editor release `vX.Y.Z`) and installs it to `/opt/senbrix` (`Apps/`, `Logs/` and `appsettings.json` are preserved on reinstall/update)
 3. Creates the dedicated user `senbrix` (gpio, dialout groups), registers and starts the **systemd service `senbrix-runtime`**, prints status and IP
 
 Options: `sudo bash -s -- --version 0.9.0` (pin a version; use the same version as the editor) · `--tarball ./file.tar.gz` (offline, pre-downloaded file) · `--no-dotnet` (skip the .NET install).
@@ -149,12 +152,12 @@ The installed app checks quietly for a new version at startup; use **Help › Ch
 
 ## Release assets
 
-| File | Purpose |
-|---|---|
-| `Senbrix-win-Setup.exe` | **Editor: the file to download for a first install** |
-| `Senbrix-runtime-x.y.z-linux.tar.gz`, `install-runtime.sh` | **Raspberry Pi runtime** and its install script ([Runtime install](#runtime-install-raspberry-pi)). The script downloads the tar.gz itself, so you normally do not download it by hand |
-| `Senbrix-x.y.z-full.nupkg`, `*-delta.nupkg` | Auto-update packages. Not for direct download |
-| `RELEASES`, `releases.win.json`, `assets.win.json` | Auto-update metadata |
+| Release | File | Purpose |
+|---|---|---|
+| `vX.Y.Z` (editor) | `Senbrix-win-Setup.exe` | **Editor: the file to download for a first install** |
+| `vX.Y.Z` (editor) | `Senbrix-x.y.z-full.nupkg`, `*-delta.nupkg`, `RELEASES`, `releases.win.json`, `assets.win.json` | Auto-update packages and metadata. Not for direct download |
+| `runtime-vX.Y.Z` (runtime) | `Senbrix-runtime-x.y.z-linux.tar.gz` | **Raspberry Pi runtime**. `install-runtime.sh` downloads it itself, so you normally do not download it by hand (offline: `--tarball`) |
+| repository root | `install-runtime.sh` | Runtime install script ([Runtime install](#runtime-install-raspberry-pi)) |
 
 ## Feedback
 
