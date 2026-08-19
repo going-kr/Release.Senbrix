@@ -28,7 +28,7 @@ Senbrix has two parts that are **installed separately**. This release contains t
 | **Senbrix Editor** (this release) | Windows PC | Ladder/symbol/C# editing, lint, build (`dotnet build`), runtime discovery and deploy, live monitoring and diagnostics, MCP server |
 | **Senbrix Runtime** | Raspberry Pi | Executes the deployed app on a 10 ms scan cycle. Talks to the editor over HTTP (5557), TextComm (5555) and mDNS. Runs as a systemd service; persists/restores keep memory and drives CAN IO expansion boards, main-board GPIO and Modbus communication |
 
-The runtime package is **not yet published on this release page; it is provided separately**. Raspberry Pi install in short: install the .NET 9 runtime → copy the runtime files to `/opt/senbrix/` (dedicated `senbrix` user) → register and start `senbrix-runtime.service` with systemd → open 5557/5555 and mDNS in the firewall. The editor's **Deploy** pushes the *app (build output)* to the runtime; it does not install the runtime itself.
+See [Runtime install (Raspberry Pi)](#runtime-install-raspberry-pi) below. The editor's **Deploy** pushes the *app (build output)* to the runtime; it does not install the runtime itself.
 
 ## Features
 
@@ -74,14 +74,66 @@ Senbrix embeds an **MCP server**, so AI coding tools such as Claude Code and Cod
 | | Requirement |
 |---|---|
 | Editor PC | Windows 10/11 x64. **.NET 9 SDK** (the build runs `dotnet build`). The desktop runtime is installed by the setup if missing |
-| Runtime device | Raspberry Pi (64-bit Linux) + .NET 9 runtime + Senbrix Runtime (see Components above; provided separately). Same network as the editor (ports 5557/5555, mDNS) |
+| Runtime device | Raspberry Pi (64-bit Linux) + .NET 9 runtime + Senbrix Runtime (see install section below). Same network as the editor (ports 5557/5555, mDNS) |
 
-## Install
+## Editor install (Windows)
 
 1. Download **`Senbrix-win-Setup.exe`** from the [latest release](https://github.com/going-kr/Release.Senbrix/releases/latest) and run it.
 2. The installer is not code-signed, so Windows SmartScreen may warn → **"More info" → "Run anyway"**.
 3. If the .NET 9 Desktop Runtime is missing, the installer downloads and installs it (an admin prompt may appear once).
 4. Installs per-user under `%LocalAppData%\Senbrix`; no admin rights required.
+
+## Runtime install (Raspberry Pi)
+
+Install the **Senbrix Runtime**, the target the editor deploys to, once on the Raspberry Pi. Instructions assume 64-bit Raspberry Pi OS (Bookworm); run every command in the Pi's shell.
+
+1. **Get the runtime files**: download `Senbrix-runtime-x.y.z-linux.tar.gz` from the release page (use the same version as the editor).
+2. **Install the .NET 9 runtime** (once):
+   ```bash
+   curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0 --runtime dotnet --install-dir /usr/share/dotnet
+   sudo ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
+   dotnet --list-runtimes
+   ```
+3. **Dedicated user and install folder**:
+   ```bash
+   sudo useradd --system --no-create-home senbrix
+   sudo mkdir -p /opt/senbrix
+   sudo tar -xzf Senbrix-runtime-x.y.z-linux.tar.gz -C /opt/senbrix
+   sudo chown -R senbrix:senbrix /opt/senbrix
+   ```
+   `Apps/` (deployed apps) and `Logs/` are created by the runtime on first start.
+4. **Register the systemd service**: `/etc/systemd/system/senbrix-runtime.service`
+   ```ini
+   [Unit]
+   Description=Senbrix Runtime (PLC)
+   Wants=network-online.target
+   After=network-online.target
+
+   [Service]
+   Type=notify
+   User=senbrix
+   WorkingDirectory=/opt/senbrix
+   ExecStart=/usr/bin/dotnet /opt/senbrix/Senbrix.Runtime.dll
+   Restart=always
+   RestartSec=5
+   SyslogIdentifier=senbrix-runtime
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+   Match the `dotnet` path in `ExecStart` to `which dotnet`.
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now senbrix-runtime
+   journalctl -u senbrix-runtime -f
+   ```
+5. **Network**: put the Pi on the same network as the editor PC; if a firewall is active, open **5557 (HTTP), 5555 (TextComm) and 5353/UDP (mDNS)**.
+6. **Verify**: click the connection icon at the bottom of the editor → the Pi's hostname appears in **Connect Device** (enter the IP manually if not). **Deploy** then sends the build output and the runtime starts the app immediately.
+
+To **update** the runtime, extract the new tar.gz over `/opt/senbrix/` and run `sudo systemctl restart senbrix-runtime` (`Apps/` and `Logs/` are kept). If the editor is newer than the runtime, deploy is rejected and the status bar says a runtime update is required.
+
+- For CAN IO expansion boards set `Runtime:CanPort` (e.g. `can0`) in `appsettings.json`.
+- The runtime API is currently unauthenticated. Operate it **only on an isolated equipment network**.
 
 ## Update
 
@@ -91,7 +143,8 @@ The installed app checks quietly for a new version at startup; use **Help › Ch
 
 | File | Purpose |
 |---|---|
-| `Senbrix-win-Setup.exe` | **The file to download for a first install** |
+| `Senbrix-win-Setup.exe` | **Editor: the file to download for a first install** |
+| `Senbrix-runtime-x.y.z-linux.tar.gz` | **Raspberry Pi runtime** ([Runtime install](#runtime-install-raspberry-pi)) |
 | `Senbrix-x.y.z-full.nupkg`, `*-delta.nupkg` | Auto-update packages. Not for direct download |
 | `RELEASES`, `releases.win.json`, `assets.win.json` | Auto-update metadata |
 

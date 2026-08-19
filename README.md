@@ -28,7 +28,7 @@ Senbrix 는 두 부분으로 이루어지며 **따로 설치**합니다. 이 릴
 | **Senbrix 에디터** (이 릴리스) | Windows PC | 래더·심볼·C# 편집, 린트, 빌드(`dotnet build`), 런타임 발견·배포, 실시간 모니터링·진단, MCP 서버 |
 | **Senbrix 런타임** | Raspberry Pi | 배포된 앱을 10ms 스캔 사이클로 실행. HTTP(5557)·TextComm(5555)·mDNS 로 에디터와 통신. systemd 서비스로 상주하며 유지(keep) 메모리 저장·복원, IO 확장 보드(CAN)·메인 보드 GPIO·Modbus 통신을 구동 |
 
-런타임 배포본은 **아직 이 릴리스 페이지에 포함되지 않으며 별도로 제공**됩니다. 라즈베리파이 쪽 설치 요약: .NET 9 런타임 설치 → 런타임 파일을 `/opt/senbrix/` 에 복사(전용 사용자 `senbrix`) → `senbrix-runtime.service` 를 systemd 에 등록·기동 → 방화벽에서 5557/5555 와 mDNS 개방. 에디터의 **배포**는 런타임에 *앱(빌드 결과)* 을 밀어넣는 것이지 런타임 자체를 설치하는 것이 아닙니다.
+런타임 설치는 아래 [런타임 설치 (Raspberry Pi)](#런타임-설치-raspberry-pi) 절을 따릅니다. 에디터의 **배포**는 런타임에 *앱(빌드 결과)* 을 밀어넣는 것이지 런타임 자체를 설치하는 것이 아닙니다.
 
 ## 주요 기능
 
@@ -74,14 +74,66 @@ Senbrix 는 **MCP 서버**를 내장해 Claude Code · Codex 같은 AI 코딩 �
 | 구분 | 요구 사항 |
 |---|---|
 | 에디터 PC | Windows 10/11 x64. **.NET 9 SDK**(빌드에 `dotnet build` 사용). 데스크톱 런타임은 설치기가 없으면 자동 설치 |
-| 런타임 장비 | Raspberry Pi(64bit Linux) + .NET 9 런타임 + Senbrix 런타임(위 구성품 절 참고, 별도 제공). 에디터와 같은 네트워크(포트 5557/5555, mDNS) |
+| 런타임 장비 | Raspberry Pi(64bit Linux) + .NET 9 런타임 + Senbrix 런타임(아래 설치 절 참고). 에디터와 같은 네트워크(포트 5557/5555, mDNS) |
 
-## 설치
+## 에디터 설치 (Windows)
 
 1. [최신 릴리스](https://github.com/going-kr/Release.Senbrix/releases/latest) 에서 **`Senbrix-win-Setup.exe`** 를 내려받아 실행합니다.
 2. 설치기는 서명되어 있지 않아 Windows SmartScreen 경고가 뜰 수 있습니다 → **"추가 정보" → "실행"**.
 3. .NET 9 데스크톱 런타임이 없으면 설치기가 자동으로 내려받아 설치합니다(관리자 확인 창이 한 번 뜰 수 있음).
 4. 사용자 계정 아래(`%LocalAppData%\Senbrix`)에 설치되며 관리자 권한이 필요 없습니다.
+
+## 런타임 설치 (Raspberry Pi)
+
+에디터가 배포할 대상인 **Senbrix 런타임**을 라즈베리파이에 한 번 설치합니다. 64bit Raspberry Pi OS(Bookworm) 기준이며, 명령은 모두 라즈베리파이 셸에서 실행합니다.
+
+1. **런타임 파일 받기**: 릴리스 페이지의 `Senbrix-runtime-x.y.z-linux.tar.gz` 를 내려받습니다(에디터와 같은 버전을 씁니다).
+2. **.NET 9 런타임 설치** (1회):
+   ```bash
+   curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0 --runtime dotnet --install-dir /usr/share/dotnet
+   sudo ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
+   dotnet --list-runtimes
+   ```
+3. **전용 사용자와 설치 폴더**:
+   ```bash
+   sudo useradd --system --no-create-home senbrix
+   sudo mkdir -p /opt/senbrix
+   sudo tar -xzf Senbrix-runtime-x.y.z-linux.tar.gz -C /opt/senbrix
+   sudo chown -R senbrix:senbrix /opt/senbrix
+   ```
+   `Apps/`(배포된 앱)·`Logs/` 는 런타임이 첫 실행 때 만듭니다.
+4. **systemd 서비스 등록**: `/etc/systemd/system/senbrix-runtime.service`
+   ```ini
+   [Unit]
+   Description=Senbrix Runtime (PLC)
+   Wants=network-online.target
+   After=network-online.target
+
+   [Service]
+   Type=notify
+   User=senbrix
+   WorkingDirectory=/opt/senbrix
+   ExecStart=/usr/bin/dotnet /opt/senbrix/Senbrix.Runtime.dll
+   Restart=always
+   RestartSec=5
+   SyslogIdentifier=senbrix-runtime
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+   `ExecStart` 의 `dotnet` 경로는 `which dotnet` 결과에 맞춥니다.
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now senbrix-runtime
+   journalctl -u senbrix-runtime -f
+   ```
+5. **네트워크**: 에디터 PC 와 같은 네트워크에 두고, 방화벽을 쓰면 **5557(HTTP)·5555(TextComm)·5353/UDP(mDNS)** 를 엽니다.
+6. **확인**: 에디터 하단의 연결 아이콘 → **장치 연결** 목록에 라즈베리파이 호스트명이 뜨면 성공입니다(안 뜨면 IP 직접 입력). 이후 **Deploy** 로 빌드 결과를 보내면 런타임이 앱을 받아 즉시 실행합니다.
+
+런타임 **업데이트**는 새 tar.gz 를 `/opt/senbrix/` 에 덮어쓰고 `sudo systemctl restart senbrix-runtime` 입니다(`Apps/`·`Logs/` 는 보존). 에디터와 런타임 버전이 어긋나면(에디터가 더 새 버전) 배포가 거부되며 상태바에 "런타임 업데이트가 필요합니다" 가 표시됩니다.
+
+- CAN IO 확장 보드를 쓰면 `appsettings.json` 의 `Runtime:CanPort`(예: `can0`)를 설정합니다.
+- 현재 런타임 API 는 인증이 없습니다. **격리된 설비 네트워크**에서만 운용하세요.
 
 ## 업데이트
 
@@ -91,7 +143,8 @@ Senbrix 는 **MCP 서버**를 내장해 Claude Code · Codex 같은 AI 코딩 �
 
 | 파일 | 용도 |
 |---|---|
-| `Senbrix-win-Setup.exe` | **처음 설치 시 받는 파일** |
+| `Senbrix-win-Setup.exe` | **에디터 처음 설치 시 받는 파일** |
+| `Senbrix-runtime-x.y.z-linux.tar.gz` | **라즈베리파이 런타임** ([런타임 설치](#런타임-설치-raspberry-pi)) |
 | `Senbrix-x.y.z-full.nupkg`, `*-delta.nupkg` | 자동 업데이트 패키지. 직접 받지 않음 |
 | `RELEASES`, `releases.win.json`, `assets.win.json` | 자동 업데이트 메타데이터 |
 
