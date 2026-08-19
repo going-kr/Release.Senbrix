@@ -11,7 +11,9 @@
 
 ---
 
-This repository distributes **installers and auto-update artifacts only**. The source code is maintained privately.
+This repository distributes **only the editor installer, auto-update artifacts, and the Raspberry Pi runtime package with its install script**. The source code is maintained privately.
+
+> ℹ️ The **"Source code (zip / tar.gz)"** links at the bottom of every release are added automatically by GitHub and are a **snapshot of this distribution repository** (README, images, install script), not the Senbrix source code.
 
 ## What is Senbrix
 
@@ -36,7 +38,7 @@ See [Runtime install (Raspberry Pi)](#runtime-install-raspberry-pi) below. The e
 ## Features
 
 ### Ladder editor: familiar notation, symbol-based
-Place contacts, coils, functions (TON/TOFF/TMON/TAON/CTU/CTD/CTR/SETOUT/RSTOUT/MCS/DIST/UNIT/WXCHG…), parallel branches and edge detection with keyboard and mouse. Write against **symbol names** instead of raw addresses (P0, M10, D127…). On save, a **static linter** flags double coils, broken rungs, latches with no release, counters with no reset, undefined names, read-only symbols and read-before-write.
+Place contacts, coils, functions (TON/TOFF/TMON/TAON/CTU/CTD/CTR/SETOUT/RSTOUT/MCS/DIST/UNIT/WXCHG…), parallel branches and edge detection with keyboard and mouse. Write against **symbol names** instead of raw addresses (P0, M10, D127…). On save, a **static linter** flags double coils, broken rungs, latches with no release, counters with no reset, undefined names, symbols that are only read and never written, read-before-write and overly complex rungs.
 
 ### Symbol table
 Name ↔ address mapping, description, unit, access rights, and **keep (retentive) symbols**: one checkbox and the value is persisted by the runtime and restored after a reboot.
@@ -76,8 +78,8 @@ Senbrix embeds an **MCP server**, so AI coding tools such as Claude Code and Cod
 
 | | Requirement |
 |---|---|
-| Editor PC | Windows 10/11 x64. **.NET 9 SDK** (the build runs `dotnet build`). The desktop runtime is installed by the setup if missing |
-| Runtime device | Raspberry Pi (64-bit Linux) + .NET 9 runtime + Senbrix Runtime (see install section below). Same network as the editor (ports 5557/5555, mDNS) |
+| Editor PC | Windows 10/11 x64. **[.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)** — the build runs `dotnet build`, so **install it yourself** (the setup only installs the desktop runtime) |
+| Runtime device | Raspberry Pi with Raspberry Pi OS **64-bit** (verified; 32-bit untested). .NET 9 is installed by the runtime install script. Same network as the editor (ports 5557/5555, mDNS) |
 
 ## Editor install (Windows)
 
@@ -85,10 +87,11 @@ Senbrix embeds an **MCP server**, so AI coding tools such as Claude Code and Cod
 2. The installer is not code-signed, so Windows SmartScreen may warn → **"More info" → "Run anyway"**.
 3. If the .NET 9 Desktop Runtime is missing, the installer downloads and installs it (an admin prompt may appear once).
 4. Installs per-user under `%LocalAppData%\Senbrix`; no admin rights required.
+5. If the **.NET 9 SDK** is missing, install the SDK (x64) from [here](https://dotnet.microsoft.com/download/dotnet/9.0). The build runs `dotnet build`, so without it **Build fails** (editing and saving still work). Check with `dotnet --list-sdks`.
 
 ## Runtime install (Raspberry Pi)
 
-Install the **Senbrix Runtime**, the target the editor deploys to, once on the Raspberry Pi. One line in the Pi's shell (Raspberry Pi OS, 64-bit recommended, 32-bit works):
+Install the **Senbrix Runtime**, the target the editor deploys to, once on the Raspberry Pi. One line in the Pi's shell (Raspberry Pi OS 64-bit verified; 32-bit untested):
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/going-kr/Release.Senbrix/master/install-runtime.sh | sudo bash
@@ -148,7 +151,8 @@ sudo systemctl daemon-reload && sudo systemctl enable --now senbrix-runtime
 
 ## Update
 
-The installed app checks quietly for a new version at startup; use **Help › Check for Updates** to download and restart. You never need to come back to this page.
+- **Editor**: the installed app checks quietly for a new version at startup; use **Help › Check for Updates** to download and restart. You never need to come back to this page.
+- **Runtime**: run the one-liner from [Runtime install](#runtime-install-raspberry-pi) again on the Pi (`Apps/` and settings are preserved). Deploy is rejected when the editor is newer than the runtime, so update the runtime after updating the editor.
 
 ## Release assets
 
@@ -158,6 +162,7 @@ The installed app checks quietly for a new version at startup; use **Help › Ch
 | `vX.Y.Z` (editor) | `Senbrix-x.y.z-full.nupkg`, `*-delta.nupkg`, `RELEASES`, `releases.win.json`, `assets.win.json` | Auto-update packages and metadata. Not for direct download |
 | `runtime-vX.Y.Z` (runtime) | `Senbrix-runtime-x.y.z-linux.tar.gz` | **Raspberry Pi runtime**. `install-runtime.sh` downloads it itself, so you normally do not download it by hand (offline: `--tarball`) |
 | repository root | `install-runtime.sh` | Runtime install script ([Runtime install](#runtime-install-raspberry-pi)) |
+| (automatic) | `Source code (zip)`, `Source code (tar.gz)` | Added by GitHub automatically: a **snapshot of this distribution repository**. Not the Senbrix source code; no need to download |
 
 ## Feedback
 

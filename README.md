@@ -11,7 +11,9 @@
 
 ---
 
-이 저장소는 **설치 파일과 자동 업데이트 산출물만** 배포합니다. 소스 코드는 비공개로 관리됩니다.
+이 저장소는 **에디터 설치 파일·자동 업데이트 산출물·라즈베리파이 런타임 패키지와 설치 스크립트만** 배포합니다. 소스 코드는 비공개로 관리됩니다.
+
+> ℹ️ 릴리스 페이지 하단의 **"Source code (zip / tar.gz)"** 는 GitHub 가 모든 릴리스에 자동으로 붙이는 **이 배포 저장소(README·이미지·설치 스크립트)의 스냅샷**이며, Senbrix 소스 코드가 아닙니다.
 
 ## Senbrix 는 무엇인가
 
@@ -36,7 +38,7 @@ Senbrix 는 두 부분으로 이루어지며 **따로 설치·따로 릴리스**
 ## 주요 기능
 
 ### 래더 편집기: 익숙한 문법, 심볼 기반
-접점·코일·펑션(TON/TOFF/TMON/TAON/CTU/CTD/CTR/SETOUT/RSTOUT/MCS/DIST/UNIT/WXCHG…)·병렬 분기·에지 검출을 키보드와 마우스로 배치합니다. 주소(P0, M10, D127…) 대신 **심볼 이름**으로 작성하고, 저장 시 **정적 린트**가 이중 코일·끊긴 렁·래치 미해제·리셋 없는 카운터·미정의 이름·읽기 전용 심볼·쓰기 전 읽기 같은 문제를 잡아 줍니다.
+접점·코일·펑션(TON/TOFF/TMON/TAON/CTU/CTD/CTR/SETOUT/RSTOUT/MCS/DIST/UNIT/WXCHG…)·병렬 분기·에지 검출을 키보드와 마우스로 배치합니다. 주소(P0, M10, D127…) 대신 **심볼 이름**으로 작성하고, 저장 시 **정적 린트**가 이중 코일·끊긴 렁·래치 미해제·리셋 없는 카운터·미정의 이름·어디에서도 쓰지 않는(읽기만 하는) 심볼·쓰기 전 읽기·복잡한 렁 같은 문제를 잡아 줍니다.
 
 ### 심볼 테이블
 이름 ↔ 주소 매핑, 설명·단위·접근권한, 그리고 **유지(keep) 심볼**. 체크 하나로 값이 런타임에 저장·복원되어 재부팅 뒤에도 이어집니다.
@@ -76,8 +78,8 @@ Senbrix 는 **MCP 서버**를 내장해 Claude Code · Codex 같은 AI 코딩 �
 
 | 구분 | 요구 사항 |
 |---|---|
-| 에디터 PC | Windows 10/11 x64. **.NET 9 SDK**(빌드에 `dotnet build` 사용). 데스크톱 런타임은 설치기가 없으면 자동 설치 |
-| 런타임 장비 | Raspberry Pi(64bit Linux) + .NET 9 런타임 + Senbrix 런타임(아래 설치 절 참고). 에디터와 같은 네트워크(포트 5557/5555, mDNS) |
+| 에디터 PC | Windows 10/11 x64. **[.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)** — 빌드가 `dotnet build` 를 부르므로 **직접 설치**해야 합니다(설치기는 데스크톱 런타임만 자동 설치) |
+| 런타임 장비 | Raspberry Pi + Raspberry Pi OS **64bit**(검증됨; 32bit 는 미검증). .NET 9 는 런타임 설치 스크립트가 함께 설치. 에디터와 같은 네트워크(포트 5557/5555, mDNS) |
 
 ## 에디터 설치 (Windows)
 
@@ -85,10 +87,11 @@ Senbrix 는 **MCP 서버**를 내장해 Claude Code · Codex 같은 AI 코딩 �
 2. 설치기는 서명되어 있지 않아 Windows SmartScreen 경고가 뜰 수 있습니다 → **"추가 정보" → "실행"**.
 3. .NET 9 데스크톱 런타임이 없으면 설치기가 자동으로 내려받아 설치합니다(관리자 확인 창이 한 번 뜰 수 있음).
 4. 사용자 계정 아래(`%LocalAppData%\Senbrix`)에 설치되며 관리자 권한이 필요 없습니다.
+5. **.NET 9 SDK** 가 없으면 [여기](https://dotnet.microsoft.com/download/dotnet/9.0)서 SDK(x64)를 설치합니다. 빌드가 `dotnet build` 를 실행하므로 없으면 **Build 가 실패**합니다(편집·저장은 가능). 설치 확인: `dotnet --list-sdks`.
 
 ## 런타임 설치 (Raspberry Pi)
 
-에디터가 배포할 대상인 **Senbrix 런타임**을 라즈베리파이에 한 번 설치합니다. Raspberry Pi OS(64bit 권장, 32bit 가능) 셸에서 한 줄:
+에디터가 배포할 대상인 **Senbrix 런타임**을 라즈베리파이에 한 번 설치합니다. Raspberry Pi OS(64bit 검증됨, 32bit 는 미검증) 셸에서 한 줄:
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/going-kr/Release.Senbrix/master/install-runtime.sh | sudo bash
@@ -148,7 +151,8 @@ sudo systemctl daemon-reload && sudo systemctl enable --now senbrix-runtime
 
 ## 업데이트
 
-설치된 앱은 시작 시 새 버전을 조용히 확인하고, **도움말 › 업데이트 확인** 에서 내려받아 재시작합니다. 이 페이지에서 다시 내려받을 필요가 없습니다.
+- **에디터**: 설치된 앱이 시작 시 새 버전을 조용히 확인하고, **도움말 › 업데이트 확인** 에서 내려받아 재시작합니다. 이 페이지에서 다시 내려받을 필요가 없습니다.
+- **런타임**: 라즈베리파이에서 [런타임 설치](#런타임-설치-raspberry-pi) 의 원라이너를 다시 실행합니다(`Apps/`·설정 보존). 에디터가 런타임보다 새 버전이면 배포가 거부되므로 에디터를 올린 뒤 런타임도 올리세요.
 
 ## 릴리스 파일 안내
 
@@ -158,6 +162,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now senbrix-runtime
 | `vX.Y.Z` (에디터) | `Senbrix-x.y.z-full.nupkg`, `*-delta.nupkg`, `RELEASES`, `releases.win.json`, `assets.win.json` | 자동 업데이트 패키지·메타데이터. 직접 받지 않음 |
 | `runtime-vX.Y.Z` (런타임) | `Senbrix-runtime-x.y.z-linux.tar.gz` | **라즈베리파이 런타임**. `install-runtime.sh` 가 직접 받으므로 보통 따로 받지 않음(오프라인 설치 시 `--tarball`) |
 | 저장소 루트 | `install-runtime.sh` | 런타임 설치 스크립트 ([런타임 설치](#런타임-설치-raspberry-pi)) |
+| (자동) | `Source code (zip)`, `Source code (tar.gz)` | GitHub 가 자동으로 붙이는 **이 배포 저장소의 스냅샷**. Senbrix 소스 코드가 아니며 받을 필요 없음 |
 
 ## 문의
 
