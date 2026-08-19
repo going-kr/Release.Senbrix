@@ -19,6 +19,17 @@
 
 <p align="center"><img src="docs/images/ladder.png" width="900" alt="래더 편집기"/></p>
 
+## 구성품: 에디터 + 런타임
+
+Senbrix 는 두 부분으로 이루어지며 **따로 설치**합니다. 이 릴리스는 에디터만 담고 있습니다.
+
+| 구성 | 실행 위치 | 역할 |
+|---|---|---|
+| **Senbrix 에디터** (이 릴리스) | Windows PC | 래더·심볼·C# 편집, 린트, 빌드(`dotnet build`), 런타임 발견·배포, 실시간 모니터링·진단, MCP 서버 |
+| **Senbrix 런타임** | Raspberry Pi | 배포된 앱을 10ms 스캔 사이클로 실행. HTTP(5557)·TextComm(5555)·mDNS 로 에디터와 통신. systemd 서비스로 상주하며 유지(keep) 메모리 저장·복원, IO 확장 보드(CAN)·메인 보드 GPIO·Modbus 통신을 구동 |
+
+런타임 배포본은 **아직 이 릴리스 페이지에 포함되지 않으며 별도로 제공**됩니다. 라즈베리파이 쪽 설치 요약: .NET 9 런타임 설치 → 런타임 파일을 `/opt/senbrix/` 에 복사(전용 사용자 `senbrix`) → `senbrix-runtime.service` 를 systemd 에 등록·기동 → 방화벽에서 5557/5555 와 mDNS 개방. 에디터의 **배포**는 런타임에 *앱(빌드 결과)* 을 밀어넣는 것이지 런타임 자체를 설치하는 것이 아닙니다.
+
 ## 주요 기능
 
 ### 래더 편집기: 익숙한 문법, 심볼 기반
@@ -63,7 +74,7 @@ Senbrix 는 **MCP 서버**를 내장해 Claude Code · Codex 같은 AI 코딩 �
 | 구분 | 요구 사항 |
 |---|---|
 | 에디터 PC | Windows 10/11 x64. **.NET 9 SDK**(빌드에 `dotnet build` 사용). 데스크톱 런타임은 설치기가 없으면 자동 설치 |
-| 런타임 장비 | Raspberry Pi(64bit Linux) + .NET 9 런타임 + Senbrix 런타임(별도 제공). 에디터와 같은 네트워크(포트 5557/5555, mDNS) |
+| 런타임 장비 | Raspberry Pi(64bit Linux) + .NET 9 런타임 + Senbrix 런타임(위 구성품 절 참고, 별도 제공). 에디터와 같은 네트워크(포트 5557/5555, mDNS) |
 
 ## 설치
 

@@ -19,6 +19,17 @@ This repository distributes **installers and auto-update artifacts only**. The s
 
 <p align="center"><img src="docs/images/ladder.png" width="900" alt="Ladder editor"/></p>
 
+## Components: editor + runtime
+
+Senbrix has two parts that are **installed separately**. This release contains the editor only.
+
+| Component | Runs on | Role |
+|---|---|---|
+| **Senbrix Editor** (this release) | Windows PC | Ladder/symbol/C# editing, lint, build (`dotnet build`), runtime discovery and deploy, live monitoring and diagnostics, MCP server |
+| **Senbrix Runtime** | Raspberry Pi | Executes the deployed app on a 10 ms scan cycle. Talks to the editor over HTTP (5557), TextComm (5555) and mDNS. Runs as a systemd service; persists/restores keep memory and drives CAN IO expansion boards, main-board GPIO and Modbus communication |
+
+The runtime package is **not yet published on this release page; it is provided separately**. Raspberry Pi install in short: install the .NET 9 runtime → copy the runtime files to `/opt/senbrix/` (dedicated `senbrix` user) → register and start `senbrix-runtime.service` with systemd → open 5557/5555 and mDNS in the firewall. The editor's **Deploy** pushes the *app (build output)* to the runtime; it does not install the runtime itself.
+
 ## Features
 
 ### Ladder editor: familiar notation, symbol-based
@@ -63,7 +74,7 @@ Senbrix embeds an **MCP server**, so AI coding tools such as Claude Code and Cod
 | | Requirement |
 |---|---|
 | Editor PC | Windows 10/11 x64. **.NET 9 SDK** (the build runs `dotnet build`). The desktop runtime is installed by the setup if missing |
-| Runtime device | Raspberry Pi (64-bit Linux) + .NET 9 runtime + Senbrix Runtime (provided separately). Same network as the editor (ports 5557/5555, mDNS) |
+| Runtime device | Raspberry Pi (64-bit Linux) + .NET 9 runtime + Senbrix Runtime (see Components above; provided separately). Same network as the editor (ports 5557/5555, mDNS) |
 
 ## Install
 
