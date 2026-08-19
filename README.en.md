@@ -85,55 +85,63 @@ Senbrix embeds an **MCP server**, so AI coding tools such as Claude Code and Cod
 
 ## Runtime install (Raspberry Pi)
 
-Install the **Senbrix Runtime**, the target the editor deploys to, once on the Raspberry Pi. Instructions assume 64-bit Raspberry Pi OS (Bookworm); run every command in the Pi's shell.
+Install the **Senbrix Runtime**, the target the editor deploys to, once on the Raspberry Pi. One line in the Pi's shell (Raspberry Pi OS, 64-bit recommended, 32-bit works):
 
-1. **Get the runtime files**: download `Senbrix-runtime-x.y.z-linux.tar.gz` from the release page (use the same version as the editor).
-2. **Install the .NET 9 runtime** (once):
-   ```bash
-   curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0 --runtime dotnet --install-dir /usr/share/dotnet
-   sudo ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
-   dotnet --list-runtimes
-   ```
-3. **Dedicated user and install folder**:
-   ```bash
-   sudo useradd --system --no-create-home senbrix
-   sudo mkdir -p /opt/senbrix
-   sudo tar -xzf Senbrix-runtime-x.y.z-linux.tar.gz -C /opt/senbrix
-   sudo chown -R senbrix:senbrix /opt/senbrix
-   ```
-   `Apps/` (deployed apps) and `Logs/` are created by the runtime on first start.
-4. **Register the systemd service**: `/etc/systemd/system/senbrix-runtime.service`
-   ```ini
-   [Unit]
-   Description=Senbrix Runtime (PLC)
-   Wants=network-online.target
-   After=network-online.target
+```bash
+curl -sSL https://github.com/going-kr/Release.Senbrix/releases/latest/download/install-runtime.sh | sudo bash
+```
 
-   [Service]
-   Type=notify
-   User=senbrix
-   WorkingDirectory=/opt/senbrix
-   ExecStart=/usr/bin/dotnet /opt/senbrix/Senbrix.Runtime.dll
-   Restart=always
-   RestartSec=5
-   SyslogIdentifier=senbrix-runtime
+What the script does:
+1. Installs the **.NET 9 ASP.NET Core runtime** to `/opt/dotnet` (official `dotnet-install.sh`, arm64/arm32 detected, skipped if present)
+2. Downloads **`Senbrix-runtime-x.y.z-linux.tar.gz`** from the release and installs it to `/opt/senbrix` (`Apps/`, `Logs/` and `appsettings.json` are preserved on reinstall/update)
+3. Creates the dedicated user `senbrix` (gpio, dialout groups), registers and starts the **systemd service `senbrix-runtime`**, prints status and IP
 
-   [Install]
-   WantedBy=multi-user.target
-   ```
-   Match the `dotnet` path in `ExecStart` to `which dotnet`.
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now senbrix-runtime
-   journalctl -u senbrix-runtime -f
-   ```
-5. **Network**: put the Pi on the same network as the editor PC; if a firewall is active, open **5557 (HTTP), 5555 (TextComm) and 5353/UDP (mDNS)**.
-6. **Verify**: click the connection icon at the bottom of the editor → the Pi's hostname appears in **Connect Device** (enter the IP manually if not). **Deploy** then sends the build output and the runtime starts the app immediately.
+Options: `sudo bash -s -- --version 0.9.0` (pin a version; use the same version as the editor) · `--tarball ./file.tar.gz` (offline, pre-downloaded file) · `--no-dotnet` (skip the .NET install).
+**Updating** the runtime is the same command again. Uninstall: `sudo systemctl disable --now senbrix-runtime && sudo rm -rf /opt/senbrix /etc/systemd/system/senbrix-runtime.service`.
 
-To **update** the runtime, extract the new tar.gz over `/opt/senbrix/` and run `sudo systemctl restart senbrix-runtime` (`Apps/` and `Logs/` are kept). If the editor is newer than the runtime, deploy is rejected and the status bar says a runtime update is required.
-
-- For CAN IO expansion boards set `Runtime:CanPort` (e.g. `can0`) in `appsettings.json`.
+After install:
+- **Network**: put the Pi on the same network as the editor PC; if a firewall is active, open **5557 (HTTP), 5555 (TextComm) and 5353/UDP (mDNS)**.
+- **Verify**: click the connection icon at the bottom of the editor → the Pi's hostname appears in **Connect Device** (enter the IP manually if not). **Deploy** then sends the build output and the runtime starts the app immediately.
+- Logs: `journalctl -u senbrix-runtime -f`; settings: `/opt/senbrix/appsettings.json` (CAN IO expansion boards: `Runtime:CanPort`, e.g. `can0`).
+- If the editor is newer than the runtime, deploy is rejected and the status bar says a runtime update is required → run the command above to update.
 - The runtime API is currently unauthenticated. Operate it **only on an isolated equipment network**.
+
+<details>
+<summary>Manual install (without the script)</summary>
+
+```bash
+# .NET 9 ASP.NET Core runtime
+curl -sSL https://dot.net/v1/dotnet-install.sh | sudo bash /dev/stdin --channel 9.0 --runtime aspnetcore --install-dir /opt/dotnet
+sudo ln -sf /opt/dotnet/dotnet /usr/local/bin/dotnet
+# user, folder, files
+sudo useradd --system --no-create-home senbrix
+sudo mkdir -p /opt/senbrix && sudo tar -xzf Senbrix-runtime-x.y.z-linux.tar.gz -C /opt/senbrix
+sudo chown -R senbrix:senbrix /opt/senbrix
+```
+`/etc/systemd/system/senbrix-runtime.service`:
+```ini
+[Unit]
+Description=Senbrix Runtime (PLC)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=notify
+User=senbrix
+WorkingDirectory=/opt/senbrix
+Environment=DOTNET_ROOT=/opt/dotnet
+ExecStart=/opt/dotnet/dotnet /opt/senbrix/Senbrix.Runtime.dll
+Restart=always
+RestartSec=5
+SyslogIdentifier=senbrix-runtime
+
+[Install]
+WantedBy=multi-user.target
+```
+```bash
+sudo systemctl daemon-reload && sudo systemctl enable --now senbrix-runtime
+```
+</details>
 
 ## Update
 
@@ -144,7 +152,7 @@ The installed app checks quietly for a new version at startup; use **Help › Ch
 | File | Purpose |
 |---|---|
 | `Senbrix-win-Setup.exe` | **Editor: the file to download for a first install** |
-| `Senbrix-runtime-x.y.z-linux.tar.gz` | **Raspberry Pi runtime** ([Runtime install](#runtime-install-raspberry-pi)) |
+| `Senbrix-runtime-x.y.z-linux.tar.gz`, `install-runtime.sh` | **Raspberry Pi runtime** and its install script ([Runtime install](#runtime-install-raspberry-pi)). The script downloads the tar.gz itself, so you normally do not download it by hand |
 | `Senbrix-x.y.z-full.nupkg`, `*-delta.nupkg` | Auto-update packages. Not for direct download |
 | `RELEASES`, `releases.win.json`, `assets.win.json` | Auto-update metadata |
 

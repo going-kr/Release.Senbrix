@@ -85,55 +85,63 @@ Senbrix 는 **MCP 서버**를 내장해 Claude Code · Codex 같은 AI 코딩 �
 
 ## 런타임 설치 (Raspberry Pi)
 
-에디터가 배포할 대상인 **Senbrix 런타임**을 라즈베리파이에 한 번 설치합니다. 64bit Raspberry Pi OS(Bookworm) 기준이며, 명령은 모두 라즈베리파이 셸에서 실행합니다.
+에디터가 배포할 대상인 **Senbrix 런타임**을 라즈베리파이에 한 번 설치합니다. Raspberry Pi OS(64bit 권장, 32bit 가능) 셸에서 한 줄:
 
-1. **런타임 파일 받기**: 릴리스 페이지의 `Senbrix-runtime-x.y.z-linux.tar.gz` 를 내려받습니다(에디터와 같은 버전을 씁니다).
-2. **.NET 9 런타임 설치** (1회):
-   ```bash
-   curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0 --runtime dotnet --install-dir /usr/share/dotnet
-   sudo ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
-   dotnet --list-runtimes
-   ```
-3. **전용 사용자와 설치 폴더**:
-   ```bash
-   sudo useradd --system --no-create-home senbrix
-   sudo mkdir -p /opt/senbrix
-   sudo tar -xzf Senbrix-runtime-x.y.z-linux.tar.gz -C /opt/senbrix
-   sudo chown -R senbrix:senbrix /opt/senbrix
-   ```
-   `Apps/`(배포된 앱)·`Logs/` 는 런타임이 첫 실행 때 만듭니다.
-4. **systemd 서비스 등록**: `/etc/systemd/system/senbrix-runtime.service`
-   ```ini
-   [Unit]
-   Description=Senbrix Runtime (PLC)
-   Wants=network-online.target
-   After=network-online.target
+```bash
+curl -sSL https://github.com/going-kr/Release.Senbrix/releases/latest/download/install-runtime.sh | sudo bash
+```
 
-   [Service]
-   Type=notify
-   User=senbrix
-   WorkingDirectory=/opt/senbrix
-   ExecStart=/usr/bin/dotnet /opt/senbrix/Senbrix.Runtime.dll
-   Restart=always
-   RestartSec=5
-   SyslogIdentifier=senbrix-runtime
+스크립트가 하는 일:
+1. **.NET 9 ASP.NET Core 런타임**을 `/opt/dotnet` 에 설치(공식 `dotnet-install.sh`, arm64/arm32 자동, 이미 있으면 건너뜀)
+2. 릴리스의 **`Senbrix-runtime-x.y.z-linux.tar.gz`** 를 받아 `/opt/senbrix` 에 설치 (재설치·업데이트 시 `Apps/`·`Logs/`·`appsettings.json` 보존)
+3. 전용 사용자 `senbrix`(gpio·dialout 그룹) 생성, **systemd 서비스 `senbrix-runtime`** 등록·기동, 상태와 IP 출력
 
-   [Install]
-   WantedBy=multi-user.target
-   ```
-   `ExecStart` 의 `dotnet` 경로는 `which dotnet` 결과에 맞춥니다.
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now senbrix-runtime
-   journalctl -u senbrix-runtime -f
-   ```
-5. **네트워크**: 에디터 PC 와 같은 네트워크에 두고, 방화벽을 쓰면 **5557(HTTP)·5555(TextComm)·5353/UDP(mDNS)** 를 엽니다.
-6. **확인**: 에디터 하단의 연결 아이콘 → **장치 연결** 목록에 라즈베리파이 호스트명이 뜨면 성공입니다(안 뜨면 IP 직접 입력). 이후 **Deploy** 로 빌드 결과를 보내면 런타임이 앱을 받아 즉시 실행합니다.
+옵션: `sudo bash -s -- --version 0.9.0`(버전 고정, 에디터와 같은 버전 권장) · `--tarball ./파일.tar.gz`(오프라인, 미리 받은 파일) · `--no-dotnet`(.NET 설치 생략).
+**업데이트**도 같은 명령을 다시 실행하면 됩니다. 되돌리기: `sudo systemctl disable --now senbrix-runtime && sudo rm -rf /opt/senbrix /etc/systemd/system/senbrix-runtime.service`.
 
-런타임 **업데이트**는 새 tar.gz 를 `/opt/senbrix/` 에 덮어쓰고 `sudo systemctl restart senbrix-runtime` 입니다(`Apps/`·`Logs/` 는 보존). 에디터와 런타임 버전이 어긋나면(에디터가 더 새 버전) 배포가 거부되며 상태바에 "런타임 업데이트가 필요합니다" 가 표시됩니다.
-
-- CAN IO 확장 보드를 쓰면 `appsettings.json` 의 `Runtime:CanPort`(예: `can0`)를 설정합니다.
+설치 후:
+- **네트워크**: 에디터 PC 와 같은 네트워크에 두고, 방화벽을 쓰면 **5557(HTTP)·5555(TextComm)·5353/UDP(mDNS)** 를 엽니다.
+- **확인**: 에디터 하단의 연결 아이콘 → **장치 연결** 목록에 라즈베리파이 호스트명이 뜨면 성공입니다(안 뜨면 IP 직접 입력). 이후 **Deploy** 로 빌드 결과를 보내면 런타임이 앱을 받아 즉시 실행합니다.
+- 로그 `journalctl -u senbrix-runtime -f`, 설정 `/opt/senbrix/appsettings.json` (CAN IO 확장 보드는 `Runtime:CanPort`, 예: `can0`).
+- 에디터가 런타임보다 새 버전이면 배포가 거부되고 상태바에 "런타임 업데이트가 필요합니다" 가 뜹니다 → 위 명령으로 런타임을 올리세요.
 - 현재 런타임 API 는 인증이 없습니다. **격리된 설비 네트워크**에서만 운용하세요.
+
+<details>
+<summary>수동 설치(스크립트를 쓰지 않을 때)</summary>
+
+```bash
+# .NET 9 ASP.NET Core 런타임
+curl -sSL https://dot.net/v1/dotnet-install.sh | sudo bash /dev/stdin --channel 9.0 --runtime aspnetcore --install-dir /opt/dotnet
+sudo ln -sf /opt/dotnet/dotnet /usr/local/bin/dotnet
+# 사용자·폴더·파일
+sudo useradd --system --no-create-home senbrix
+sudo mkdir -p /opt/senbrix && sudo tar -xzf Senbrix-runtime-x.y.z-linux.tar.gz -C /opt/senbrix
+sudo chown -R senbrix:senbrix /opt/senbrix
+```
+`/etc/systemd/system/senbrix-runtime.service`:
+```ini
+[Unit]
+Description=Senbrix Runtime (PLC)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=notify
+User=senbrix
+WorkingDirectory=/opt/senbrix
+Environment=DOTNET_ROOT=/opt/dotnet
+ExecStart=/opt/dotnet/dotnet /opt/senbrix/Senbrix.Runtime.dll
+Restart=always
+RestartSec=5
+SyslogIdentifier=senbrix-runtime
+
+[Install]
+WantedBy=multi-user.target
+```
+```bash
+sudo systemctl daemon-reload && sudo systemctl enable --now senbrix-runtime
+```
+</details>
 
 ## 업데이트
 
@@ -144,7 +152,7 @@ Senbrix 는 **MCP 서버**를 내장해 Claude Code · Codex 같은 AI 코딩 �
 | 파일 | 용도 |
 |---|---|
 | `Senbrix-win-Setup.exe` | **에디터 처음 설치 시 받는 파일** |
-| `Senbrix-runtime-x.y.z-linux.tar.gz` | **라즈베리파이 런타임** ([런타임 설치](#런타임-설치-raspberry-pi)) |
+| `Senbrix-runtime-x.y.z-linux.tar.gz`, `install-runtime.sh` | **라즈베리파이 런타임**과 설치 스크립트 ([런타임 설치](#런타임-설치-raspberry-pi)). 스크립트가 tar.gz 를 직접 받으므로 보통 따로 받지 않음 |
 | `Senbrix-x.y.z-full.nupkg`, `*-delta.nupkg` | 자동 업데이트 패키지. 직접 받지 않음 |
 | `RELEASES`, `releases.win.json`, `assets.win.json` | 자동 업데이트 메타데이터 |
 
