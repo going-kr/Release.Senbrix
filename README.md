@@ -60,7 +60,7 @@ Senbrix는 두 부분으로 나뉘고, 설치와 릴리스도 따로 합니다. 
 <p align="center"><img src="docs/images/diag-arm.png" width="445" alt="진단 시작: 쓰기 허가"/></p>
 
 ### 하드웨어
-캐리어 보드의 GPIO는 XML로 정의해서 IN/OUT 슬롯에 매핑하고, CAN 버스의 IO 확장 보드(IO-8)는 번호를 지정해서 붙입니다. 이렇게 만든 보드 구성은 프로젝트에 저장되고, 런타임이 그 구성을 그대로 읽어서 씁니다.
+캐리어 보드의 GPIO는 XML로 정의해서 IN/OUT 슬롯에 매핑하고, CAN 버스의 IO 확장 보드(IO-8)는 번호를 지정해서 붙입니다. ZPi-IO8R 캐리어 보드(Pi Zero 2 W, 포토커플러 입력 4점·릴레이 출력 4점) 정의는 기본으로 제공되어 선택 목록에서 바로 지정할 수 있습니다. 이렇게 만든 보드 구성은 프로젝트에 저장되고, 런타임이 그 구성을 그대로 읽어서 씁니다.
 
 <p align="center"><img src="docs/images/project.png" width="900" alt="프로젝트 · 보드 구성"/></p>
 
@@ -100,15 +100,16 @@ curl -sSL https://raw.githubusercontent.com/going-kr/Release.Senbrix/master/inst
 스크립트가 하는 일:
 1. .NET 9 ASP.NET Core 런타임을 `/opt/dotnet`에 설치합니다(공식 `dotnet-install.sh` 사용, arm64/arm32 자동 판별, 이미 있으면 건너뜀).
 2. 런타임 릴리스(태그 `runtime-vX.Y.Z`, 에디터 릴리스 `vX.Y.Z`와는 별개)에서 `Senbrix-runtime-x.y.z-linux.tar.gz`를 받아 `/opt/senbrix`에 설치합니다. 재설치나 업데이트 때 `Apps/`, `Logs/`, `appsettings.json`은 보존됩니다.
-3. 전용 사용자 `senbrix`(gpio·dialout 그룹)를 만들고, systemd 서비스 `senbrix-runtime`을 등록·기동한 뒤 상태와 IP를 출력합니다.
+3. CAN IO 확장 보드 사용 여부를 묻습니다. 사용하면 인터페이스명(예: `can0`)을 입력하고, 사용하지 않으면 그냥 엔터를 누릅니다(재설치 때는 엔터가 기존 설정 유지).
+4. 전용 사용자 `senbrix`(gpio·dialout 그룹)를 만들고, systemd 서비스 `senbrix-runtime`을 등록·기동한 뒤 상태와 IP를 출력합니다.
 
-옵션: `sudo bash -s -- --version 0.9.0`(버전 고정, 에디터와 같은 버전 권장) · `--tarball ./파일.tar.gz`(오프라인, 미리 받은 파일 사용) · `--no-dotnet`(.NET 설치 생략).
+옵션: `sudo bash -s -- --version 0.9.0`(버전 고정, 에디터와 같은 버전 권장) · `--tarball ./파일.tar.gz`(오프라인, 미리 받은 파일 사용) · `--can-port <이름|none>`(CAN 질문 생략) · `--no-dotnet`(.NET 설치 생략).
 업데이트도 같은 명령을 다시 실행하면 됩니다. 되돌리려면: `sudo systemctl disable --now senbrix-runtime && sudo rm -rf /opt/senbrix /etc/systemd/system/senbrix-runtime.service`
 
 설치 후에는:
 - 네트워크: 에디터 PC와 같은 네트워크에 두고, 방화벽을 쓴다면 5557(HTTP), 5555(TextComm), 5353/UDP(mDNS)를 엽니다.
 - 확인: 에디터 하단의 연결 아이콘 → 장치 연결 목록에 라즈베리파이 호스트명이 뜨면 성공입니다. 안 뜨면 IP를 직접 입력하세요. 이후 Deploy로 빌드 결과를 보내면 런타임이 앱을 받아서 즉시 실행합니다.
-- 로그는 `journalctl -u senbrix-runtime -f`, 설정은 `/opt/senbrix/appsettings.json`에 있습니다(CAN IO 확장 보드는 `Runtime:CanPort`, 예: `can0`).
+- 로그는 `journalctl -u senbrix-runtime -f`, 설정은 `/opt/senbrix/appsettings.json`에 있습니다. CAN IO 확장 보드용 `Runtime:CanPort`는 설치 때 질문으로 정해지고, 나중에 바꾸려면 이 파일을 고치고 서비스를 재시작합니다.
 - 에디터가 런타임보다 새 버전이면 배포가 거부되고 상태바에 "런타임 업데이트가 필요합니다"가 뜹니다. 위 명령으로 런타임을 올리면 됩니다.
 - 현재 런타임 API는 인증이 없습니다. 반드시 격리된 설비 네트워크에서만 운용하세요.
 

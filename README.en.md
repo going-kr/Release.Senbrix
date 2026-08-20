@@ -60,7 +60,7 @@ Contact, coil, timer and word values are shown live on the ladder. In diagnostic
 <p align="center"><img src="docs/images/diag-arm.png" width="445" alt="Start diagnostics: write permission"/></p>
 
 ### Hardware
-Carrier-board GPIO is described in XML and mapped to IN/OUT slots; CAN-bus IO expansion boards (IO-8) attach by number. The board configuration is stored in the project, and the runtime reads it as-is.
+Carrier-board GPIO is described in XML and mapped to IN/OUT slots; CAN-bus IO expansion boards (IO-8) attach by number. A definition for the ZPi-IO8R carrier board (Pi Zero 2 W; 4 photocoupler inputs, 4 relay outputs) ships built in, ready to pick from the selection list. The board configuration is stored in the project, and the runtime reads it as-is.
 
 <p align="center"><img src="docs/images/project.png" width="900" alt="Project · board configuration"/></p>
 
@@ -100,15 +100,16 @@ curl -sSL https://raw.githubusercontent.com/going-kr/Release.Senbrix/master/inst
 What the script does:
 1. Installs the .NET 9 ASP.NET Core runtime to `/opt/dotnet` (using the official `dotnet-install.sh`; arm64/arm32 detected automatically, skipped if already present).
 2. Downloads `Senbrix-runtime-x.y.z-linux.tar.gz` from the runtime release (tag `runtime-vX.Y.Z`, separate from the editor release `vX.Y.Z`) and installs it to `/opt/senbrix`. On reinstall or update, `Apps/`, `Logs/` and `appsettings.json` are preserved.
-3. Creates the dedicated user `senbrix` (gpio and dialout groups), registers and starts the systemd service `senbrix-runtime`, and prints its status and IP.
+3. Asks whether you use a CAN IO expansion board. Enter the interface name (e.g. `can0`) if you do, or just press Enter if you don't (on reinstall, Enter keeps the current setting).
+4. Creates the dedicated user `senbrix` (gpio and dialout groups), registers and starts the systemd service `senbrix-runtime`, and prints its status and IP.
 
-Options: `sudo bash -s -- --version 0.9.0` (pin a version; use the same version as the editor) · `--tarball ./file.tar.gz` (offline, using a pre-downloaded file) · `--no-dotnet` (skip the .NET install).
+Options: `sudo bash -s -- --version 0.9.0` (pin a version; use the same version as the editor) · `--tarball ./file.tar.gz` (offline, using a pre-downloaded file) · `--can-port <name|none>` (skip the CAN question) · `--no-dotnet` (skip the .NET install).
 To update the runtime, run the same command again. To uninstall: `sudo systemctl disable --now senbrix-runtime && sudo rm -rf /opt/senbrix /etc/systemd/system/senbrix-runtime.service`
 
 After the install:
 - Network: put the Pi on the same network as the editor PC. If a firewall is active, open 5557 (HTTP), 5555 (TextComm) and 5353/UDP (mDNS).
 - Verify: click the connection icon at the bottom of the editor. If the Pi's hostname shows up in the Connect Device list, you're set (enter the IP manually if it doesn't). Deploy then sends the build output and the runtime starts the app immediately.
-- Logs are at `journalctl -u senbrix-runtime -f`, settings at `/opt/senbrix/appsettings.json` (for CAN IO expansion boards, set `Runtime:CanPort`, e.g. `can0`).
+- Logs are at `journalctl -u senbrix-runtime -f`, settings at `/opt/senbrix/appsettings.json`. `Runtime:CanPort` (for CAN IO expansion boards) is set by the install-time question; to change it later, edit this file and restart the service.
 - If the editor is newer than the runtime, deploy is rejected and the status bar says a runtime update is required. Run the command above to update.
 - The runtime API is currently unauthenticated. Operate it only on an isolated equipment network.
 
