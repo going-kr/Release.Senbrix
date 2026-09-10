@@ -21,17 +21,19 @@ Senbrix는 [Going](https://github.com/going-kr)에서 만드는 라즈베리파�
 
 <p align="center"><img src="docs/images/ladder.png" width="900" alt="래더 편집기"/></p>
 
-## 구성품: 에디터 + 런타임
+## 구성품: 에디터 + 런타임 (+ 시뮬레이터)
 
-Senbrix는 두 부분으로 나뉘고, 설치와 릴리스도 따로 합니다. 그래서 이 저장소의 릴리스 페이지에는 두 종류가 번갈아 올라옵니다.
+Senbrix는 에디터와 런타임으로 나뉘고, 설치와 릴리스도 따로 합니다. 하드웨어 없이 시험해 보고 싶을 때 쓰는 시뮬레이터가 하나 더 있습니다. 그래서 이 저장소의 릴리스 페이지에는 세 종류가 올라옵니다.
 
 - `vX.Y.Z` — 에디터. Windows Setup과 자동 업데이트 자산이 들어 있고, "최신 릴리스"(latest)는 항상 에디터입니다.
 - `runtime-vX.Y.Z` — 라즈베리파이 런타임(`Senbrix-runtime-X.Y.Z-linux.tar.gz`). 설치 스크립트 `install-runtime.sh`는 저장소 루트에 있어서 원라이너 URL이 바뀌지 않습니다.
+- `sim-vX.Y.Z` — 시뮬레이터(`Senbrix-sim-X.Y.Z-win.zip`). 설치 없이 압축만 풀면 됩니다. 버전은 에디터·런타임과 따로 매기고, 릴리스 노트에 어느 런타임을 품고 있는지 밝힙니다.
 
 | 구성 | 실행 위치 | 역할 |
 |---|---|---|
 | **Senbrix 에디터** (`vX.Y.Z` 릴리스) | Windows PC | 래더·심볼·C# 편집, 린트, 빌드(`dotnet build`), 런타임 발견·배포, 실시간 모니터링·진단, MCP 서버 |
 | **Senbrix 런타임** (`runtime-vX.Y.Z` 릴리스) | Raspberry Pi | 배포된 앱을 10ms 스캔 사이클로 실행. HTTP(5557)·TextComm(5555)·mDNS로 에디터와 통신. systemd 서비스로 상주하면서 유지(keep) 메모리 저장·복원, IO 확장 보드(CAN)·메인 보드 GPIO·Modbus 통신을 구동 |
+| **Senbrix 시뮬레이터** (`sim-vX.Y.Z` 릴리스) | Windows PC | 라즈베리파이 대신 배포를 받아 앱을 실행하고, 모듈과 현장 기기를 화면에서 결선하게 해 줍니다. 에디터에는 하나의 장치로 보입니다 |
 
 런타임 설치 방법은 아래 [런타임 설치 (Raspberry Pi)](#런타임-설치-raspberry-pi) 절에 있습니다. 참고로 에디터의 "배포"는 런타임에 앱(빌드 결과)을 밀어넣는 것이지 런타임 자체를 설치하는 것이 아닙니다.
 
@@ -74,12 +76,28 @@ Senbrix에는 MCP 서버가 내장되어 있어서, Claude Code나 Codex 같은 
 
 <p align="center"><img src="docs/images/ai.png" width="900" alt="AI 진행 상태"/></p>
 
+### 시뮬레이터 (하드웨어 없이 시험하기)
+
+라즈베리파이와 IO 모듈이 없어도 배포한 프로그램을 돌려 볼 수 있습니다. 시뮬레이터는 **런타임을 그대로 안에 넣고** 실행하므로, 스캔 사이클도 보드 드라이버도 실물과 같은 것이 돕니다. 다른 점은 보드와 주고받는 통로(실물에서는 CAN 선)뿐입니다.
+
+에디터의 장치 연결 목록에 평범한 장치 하나로 뜨고, 평소처럼 배포하면 됩니다. 배포하고 나면 그 프로그램이 쓰는 모듈이 화면의 레일에 붙고, 채널마다 스위치·센서·표시등이 놓이고 배선까지 이어집니다. 심볼에 적어 둔 이름이 그대로 기기 이름표가 되고, 단위도 따라옵니다.
+
+- 스위치를 켜고 센서 값을 돌리면 프로그램이 반응합니다. 실행 중에도 값을 바꿀 수 있습니다
+- 모듈과 기기를 직접 놓고 단자를 눌러 이을 수도 있습니다. 이을 수 없는 조합은 거절합니다
+- 전원·접지·COM 은 선을 긋지 않아도 이어진 것으로 봅니다. 어느 공통에 물릴지는 단자마다 고를 수 있습니다
+- 보드가 주고받는 값과 배선에 실린 값을 한 화면에서 봅니다
+
+설치는 없습니다. `Senbrix-sim-X.Y.Z-win.zip` 을 풀고 `SenbrixSim.exe` 를 실행하면 됩니다(.NET 설치 불필요). 에디터와 같은 PC에서 써도 되고, 같은 네트워크의 다른 PC에서 써도 됩니다.
+
+시뮬레이터는 런타임을 다시 만든 것이 아니라 **그 버전의 런타임을 그대로 품고** 있습니다. 그래서 릴리스마다 어느 런타임이 들어 있는지 밝히고(예: 시뮬레이터 `0.1.0` — 런타임 `0.9.2`), 압축을 풀면 `읽어보세요.txt` 첫 줄에도 적혀 있습니다. 라즈베리파이와 마찬가지로 **에디터가 품은 런타임보다 새 버전이면 배포가 거부됩니다.**
+
 ## 요구 사항
 
 | 구분 | 요구 사항 |
 |---|---|
 | 에디터 PC | Windows 10/11 x64. [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)를 직접 설치해야 합니다. 빌드가 `dotnet build`를 부르는데, 설치기는 데스크톱 런타임만 자동 설치하기 때문입니다 |
 | 런타임 장비 | Raspberry Pi + Raspberry Pi OS 64bit(검증됨. 32bit는 미검증). .NET 9는 런타임 설치 스크립트가 함께 설치합니다. 에디터와 같은 네트워크(포트 5557/5555, mDNS)에 있어야 합니다 |
+| 시뮬레이터 | Windows 10/11 x64. 별도 설치 없이 실행됩니다(.NET 포함). 런타임과 같은 포트(5557/5555, mDNS)를 씁니다 |
 
 ## 에디터 설치 (Windows)
 
@@ -162,6 +180,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now senbrix-runtime
 | `vX.Y.Z` (에디터) | `Senbrix-win-Setup.exe` | **에디터를 처음 설치할 때 받는 파일** |
 | `vX.Y.Z` (에디터) | `Senbrix-x.y.z-full.nupkg`, `*-delta.nupkg`, `RELEASES`, `releases.win.json`, `assets.win.json` | 자동 업데이트 패키지와 메타데이터. 직접 받을 일 없음 |
 | `runtime-vX.Y.Z` (런타임) | `Senbrix-runtime-x.y.z-linux.tar.gz` | 라즈베리파이 런타임. `install-runtime.sh`가 직접 받으므로 보통 따로 받지 않음(오프라인 설치 시 `--tarball`) |
+| `sim-vX.Y.Z` (시뮬레이터) | `Senbrix-sim-x.y.z-win.zip` | 하드웨어 없이 시험할 때. 압축을 풀고 `SenbrixSim.exe` 실행. 품고 있는 런타임 버전은 릴리스 노트와 `읽어보세요.txt` 에 있음 |
 | 저장소 루트 | `install-runtime.sh` | 런타임 설치 스크립트 ([런타임 설치](#런타임-설치-raspberry-pi)) |
 | (자동) | `Source code (zip)`, `Source code (tar.gz)` | GitHub가 자동으로 붙이는 이 배포 저장소의 스냅샷. Senbrix 소스 코드가 아니며 받을 필요 없음 |
 

@@ -21,17 +21,19 @@ Senbrix is [Going](https://github.com/going-kr)'s Raspberry Pi PLC toolchain. Wh
 
 <p align="center"><img src="docs/images/ladder.png" width="900" alt="Ladder editor"/></p>
 
-## Components: editor + runtime
+## Components: editor + runtime (+ simulator)
 
-Senbrix comes in two parts, installed and released separately, so two kinds of releases appear on this repository's release page.
+Senbrix comes in two parts, installed and released separately. A simulator is available as well, for trying things without hardware. Three kinds of releases appear on this repository's release page.
 
 - `vX.Y.Z` — the editor (Windows setup and auto-update assets). The "latest release" is always the editor.
 - `runtime-vX.Y.Z` — the Raspberry Pi runtime (`Senbrix-runtime-X.Y.Z-linux.tar.gz`). The install script `install-runtime.sh` lives at the repository root, so the one-liner URL never changes.
+- `sim-vX.Y.Z` — the simulator (`Senbrix-sim-X.Y.Z-win.zip`). No installer; unzip and run. It is versioned separately from the editor and the runtime, and each release states which runtime it carries.
 
 | Component | Runs on | Role |
 |---|---|---|
 | **Senbrix Editor** (`vX.Y.Z` releases) | Windows PC | Ladder/symbol/C# editing, lint, build (`dotnet build`), runtime discovery and deploy, live monitoring and diagnostics, MCP server |
 | **Senbrix Runtime** (`runtime-vX.Y.Z` releases) | Raspberry Pi | Executes the deployed app on a 10 ms scan cycle. Talks to the editor over HTTP (5557), TextComm (5555) and mDNS. Runs as a systemd service; persists and restores keep memory, and drives CAN IO expansion boards, main-board GPIO and Modbus communication |
+| **Senbrix Simulator** (`sim-vX.Y.Z` releases) | Windows PC | Takes a deploy in place of a Raspberry Pi, runs the app, and lets you wire modules to field devices on screen. The editor sees it as an ordinary device |
 
 See [Runtime install (Raspberry Pi)](#runtime-install-raspberry-pi) below. Note that the editor's Deploy pushes the app (the build output) to the runtime; it does not install the runtime itself.
 
@@ -74,12 +76,28 @@ Senbrix has a built-in MCP server, so AI coding tools such as Claude Code and Co
 
 <p align="center"><img src="docs/images/ai.png" width="900" alt="AI progress"/></p>
 
+### Simulator (trying things without hardware)
+
+You can run a deployed program without a Raspberry Pi or IO modules. The simulator **contains the runtime itself**, so the same scan cycle and the same board drivers run as on real hardware. The only difference is the path the boards talk over — a CAN wire in the real thing.
+
+It appears in the editor's device list as an ordinary device, and you deploy to it as usual. After a deploy, the modules that program uses appear on the rail, a switch, sensor or lamp is placed on each channel, and the wiring is drawn. Names from your symbol table become the device labels, and units come along with them.
+
+- Flip a switch or turn a sensor value and the program reacts. Values can be changed while it runs
+- You can also place modules and devices yourself and click terminals to wire them. Incompatible pairs are refused
+- Power, ground and COM count as connected without drawing a wire. Which common a terminal ties to is your choice, per terminal
+- Board values and wire values are shown side by side
+
+There is no installer. Unzip `Senbrix-sim-X.Y.Z-win.zip` and run `SenbrixSim.exe` (.NET not required). Use it on the same PC as the editor, or on another PC on the same network.
+
+The simulator does not reimplement the runtime — it **carries a specific runtime version inside**. Every release therefore states which one (for example, simulator `0.1.0` — runtime `0.9.2`), and the first line of `읽어보세요.txt` in the zip says the same. As with the Raspberry Pi, **a deploy is refused if the editor is newer than the runtime it carries.**
+
 ## Requirements
 
 | | Requirement |
 |---|---|
 | Editor PC | Windows 10/11 x64. Install the [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) yourself — the build runs `dotnet build`, and the setup only installs the desktop runtime |
 | Runtime device | Raspberry Pi with Raspberry Pi OS 64-bit (verified; 32-bit untested). .NET 9 is installed by the runtime install script. Same network as the editor (ports 5557/5555, mDNS) |
+| Simulator | Windows 10/11 x64. Runs with no separate install (.NET included). Uses the same ports as the runtime (5557/5555, mDNS) |
 
 ## Editor install (Windows)
 
@@ -162,6 +180,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now senbrix-runtime
 | `vX.Y.Z` (editor) | `Senbrix-win-Setup.exe` | **The file to download for a first editor install** |
 | `vX.Y.Z` (editor) | `Senbrix-x.y.z-full.nupkg`, `*-delta.nupkg`, `RELEASES`, `releases.win.json`, `assets.win.json` | Auto-update packages and metadata, not meant for manual download |
 | `runtime-vX.Y.Z` (runtime) | `Senbrix-runtime-x.y.z-linux.tar.gz` | The Raspberry Pi runtime. `install-runtime.sh` downloads it itself, so you normally don't download it by hand (offline: `--tarball`) |
+| `sim-vX.Y.Z` (simulator) | `Senbrix-sim-x.y.z-win.zip` | For trying things without hardware. Unzip and run `SenbrixSim.exe`. The runtime version it carries is in the release notes and in `읽어보세요.txt` |
 | repository root | `install-runtime.sh` | Runtime install script ([Runtime install](#runtime-install-raspberry-pi)) |
 | (automatic) | `Source code (zip)`, `Source code (tar.gz)` | GitHub's automatic snapshot of this distribution repository. Not the Senbrix source code; no need to download |
 
