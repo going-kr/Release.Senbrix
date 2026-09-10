@@ -91,6 +91,8 @@ There is no installer. Unzip `Senbrix-sim-X.Y.Z-win.zip` and run `SenbrixSim.exe
 
 The simulator does not reimplement the runtime — it **carries a specific runtime version inside**. Every release therefore states which one (for example, simulator `0.1.0` — runtime `0.9.2`), and the first line of `읽어보세요.txt` in the zip says the same. As with the Raspberry Pi, **a deploy is refused if the editor is newer than the runtime it carries.**
 
+<p align="center"><img src="docs/images/simulator.png" width="900" alt="Simulator"/></p>
+
 ## Requirements
 
 | | Requirement |
@@ -168,10 +170,30 @@ sudo systemctl daemon-reload && sudo systemctl enable --now senbrix-runtime
 ```
 </details>
 
+## Simulator install (Windows)
+
+There is no installer. Unzipping is the whole install.
+
+1. From the latest simulator release (`sim-vX.Y.Z`), download **`Senbrix-sim-X.Y.Z-win.zip`**.
+2. Unzip it wherever you like. Avoid locations that need elevated write access, such as `Program Files` — the program creates `Apps/`, `Benches/` and `Logs/` inside its own folder.
+3. Run **`SenbrixSim.exe`**. .NET is bundled, so nothing else to install.
+4. Open the editor's device list and it appears there. Deploy to it as usual.
+
+| Item | Detail |
+|---|---|
+| Requirements | Windows 10/11 x64. The screen is drawn with WebView2 — recent Windows versions usually have it; if not, install the "Microsoft Edge WebView2 Runtime" and run again |
+| Network | Uses the same ports as the runtime (5557 / 5555) and mDNS. It must be on the same network as the editor, and it collides with a Raspberry Pi runtime running on the same PC |
+| SmartScreen | The executable is unsigned, so Windows may warn — choose "More info → Run anyway" |
+| Settings | `appsettings.json` holds `DeviceName` (the name shown in the editor), `HttpPort` and `CommPort`. Keep `DeviceName` ASCII — it is advertised over mDNS, and non-ASCII names do not show up in the editor's list. Restart after editing |
+| Uninstall | Delete the folder you unzipped. Nothing is written to the registry |
+
+To update, download the new zip and unzip it again. To keep `Apps/` (deployed programs), `Benches/` (saved benches), `Devices/` (device maps you added) and `appsettings.json`, move those four aside and put them back.
+
 ## Update
 
 - Editor: once installed, the app checks for a new version at startup. Download and restart from Help › Check for Updates; there's no need to come back to this page.
 - Runtime: run the one-liner from [Runtime install](#runtime-install-raspberry-pi) again on the Pi (`Apps/` and settings are preserved). Deploy is rejected when the editor is newer than the runtime, so after updating the editor, update the runtime too.
+- Simulator: download the new zip and unzip it again ([Simulator install](#simulator-install-windows)). There is no auto-update. Each release states the runtime version it carries, so after updating the editor, take the matching simulator.
 
 ## Release assets
 
