@@ -80,7 +80,7 @@ Senbrix has a built-in MCP server, so AI coding tools such as Claude Code and Co
 
 You can run a deployed program without a Raspberry Pi or IO modules. The simulator **contains the runtime itself**, so the same scan cycle and the same board drivers run as on real hardware. The only difference is the path the boards talk over — a CAN wire in the real thing.
 
-It appears in the editor's device list as an ordinary device, and you deploy to it as usual. After a deploy, the modules that program uses appear on the rail, a switch, sensor or lamp is placed on each channel, and the wiring is drawn. Names from your symbol table become the device labels, and units come along with them.
+It appears in the editor's device list as an ordinary device, and you deploy to it as usual. After a deploy, the modules used by the program you just deployed appear on the rail, a switch, sensor or lamp is placed on each channel, and the wiring is drawn. Names from your symbol table become the device labels, and units come along with them.
 
 - Flip a switch or turn a sensor value and the program reacts. Values can be changed while it runs
 - You can also place modules and devices yourself and click terminals to wire them. Incompatible pairs are refused
