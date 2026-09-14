@@ -5,7 +5,7 @@
 <h1 align="center">Senbrix PLC</h1>
 <p align="center">라즈베리파이를 <b>PLC처럼</b> 쓰게 해주는 래더 + C# 개발 환경</p>
 <p align="center">
-  <a href="https://github.com/going-kr/Release.Senbrix/releases/latest"><b>⬇ Senbrix-win-Setup.exe 내려받기</b></a>
+  <a href="https://github.com/going-kr/Release.Senbrix/releases/latest"><b>⬇ Senbrix-win-Setup.exe 내려받기</b></a> &nbsp;·&nbsp; <a href="https://intosen.com/senbrix/"><b>제품 페이지</b></a>
   &nbsp;·&nbsp; Windows 10/11 x64 &nbsp;·&nbsp; 한국어 / English UI
 </p>
 

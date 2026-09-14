@@ -5,7 +5,7 @@
 <h1 align="center">Senbrix PLC</h1>
 <p align="center">A ladder + C# development environment that turns a Raspberry Pi into a <b>PLC</b></p>
 <p align="center">
-  <a href="https://github.com/going-kr/Release.Senbrix/releases/latest"><b>⬇ Download Senbrix-win-Setup.exe</b></a>
+  <a href="https://github.com/going-kr/Release.Senbrix/releases/latest"><b>⬇ Download Senbrix-win-Setup.exe</b></a> &nbsp;·&nbsp; <a href="https://intosen.com/senbrix/"><b>Product page</b></a>
   &nbsp;·&nbsp; Windows 10/11 x64 &nbsp;·&nbsp; Korean / English UI
 </p>
 
